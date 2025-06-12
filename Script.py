@@ -11,6 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import cross_val_score
 import datetime as dt
 
 print("*IMPLEMENTACIÓN DE MODELOS PREDICTIVOS. CASO PREDICTIVO DE VENTAS*")
@@ -24,10 +26,11 @@ data = pd.read_excel("C:/Users/scist/Downloads/U/inteligencia de negocios/script
 data['fecha'] = pd.to_datetime(data['fecha'])
 data['mes'] = data['fecha'].dt.month
 data['año'] = data['fecha'].dt.year
-data = data[(data['merma_unidad'] > -2) & (data['merma_unidad'] < 2)]
+data = data[(data['merma_unidad_p'] > -2) & (data['merma_unidad_p'] < 2)]
 
 # Convertir solo los valores decimales de merma_unidad a enteros
 data['merma_unidad'] = data['merma_unidad'].apply(lambda x: int(x) if not float(x).is_integer() else x)
+
 
 # Crear nuevas características para las fechas
 #data['Order Year'] = data['Order Date'].dt.year
@@ -42,7 +45,7 @@ features = [
 ]
 
 X = data[features]
-y = data['merma_unidad']  # O cambia a 'merma_monto' si quieres predecir pérdida en dinero
+y = data['merma_unidad_p']  # O cambia a 'merma_monto' si quieres predecir pérdida en dinero
 
 
 # PASO 4: DIVISIÓN DE DATOS
@@ -241,6 +244,15 @@ metrics_df = pd.DataFrame({
 print("\nComparación de métricas entre modelos:")
 print(metrics_df)
 
+# VISUALIZACIÓN DEL MODELO XGBOOST
+plt.figure(figsize=(12, 6))
+plt.scatter(y_test, y_pred_xgb, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+plt.xlabel('Valores Reales')
+plt.ylabel('Predicciones XGBoost')
+plt.title('XGBoost: Predicciones vs Valores Reales')
+plt.savefig('xgboost_predicciones_vs_reales.png')
+plt.show()
 
 # PASO 11: VISUALIZACIÓN DE PREDICCIONES VS VALORES REALES
 plt.figure(figsize=(12, 6))
@@ -272,6 +284,36 @@ plt.xlabel('Error')
 plt.savefig('distribucion_errores.png')
 print("Gráfico guardado: distribucion_errores.png")
 
+# PREDICCIONES VS VALORES REALES - XGBoost
+plt.figure(figsize=(12, 6))
+plt.scatter(y_test, y_pred_xgb, alpha=0.5, color='green')
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+plt.xlabel('Valores Reales')
+plt.ylabel('Predicciones')
+plt.title('XGBoost: Predicciones vs Valores Reales')
+plt.grid(True)
+plt.savefig('xgb_predicciones_vs_reales.png')
+
+# RESIDUOS - XGBoost
+residuals_xgb = y_test - y_pred_xgb
+plt.figure(figsize=(12, 6))
+plt.scatter(y_pred_xgb, residuals_xgb, alpha=0.5, color='purple')
+plt.axhline(y=0, color='r', linestyle='--')
+plt.xlabel('Predicciones')
+plt.ylabel('Residuos')
+plt.title('Análisis de Residuos - XGBoost')
+plt.grid(True)
+plt.savefig('xgb_analisis_residuos.png')
+
+# DISTRIBUCIÓN DE ERRORES - XGBoost
+plt.figure(figsize=(10, 6))
+sns.histplot(residuals_xgb, kde=True, color='blue')
+plt.axvline(x=0, color='r', linestyle='--')
+plt.title('Distribución de Errores - XGBoost')
+plt.xlabel('Error')
+plt.grid(True)
+plt.savefig('xgb_distribucion_errores.png')
+
 # -------------------------------------------------
 # DOCUMENTACIÓN DEL PROCESO
 # -------------------------------------------------
@@ -283,7 +325,7 @@ print(f"Dimensiones del dataset: {data.shape[0]} filas x {data.shape[1]} columna
 print(f"Período de tiempo analizado: de {data['fecha'].min().date()} a {data['fecha'].max().date()}")
 print(f"Tipos de datos en las columnas principales:")
 #aca se puedn agregar las variable segun los datos que quier obtener
-print(data[features + ['merma_unidad', 'merma_monto', 'motivo']].dtypes)
+print(data[features + ['merma_unidad_p', 'merma_monto', 'motivo']].dtypes)
 
 
 # PASO 15: DOCUMENTAR EL PREPROCESAMIENTO
